@@ -1,2 +1,3 @@
-# legu
-Legu ~ IDK what to do with this yet
+# Legu
+IDK What to do with this repo yet, maybe a tools site? Hmm...
+
