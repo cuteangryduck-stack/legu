@@ -4,6 +4,8 @@ Legu is a very generic tools & gaming website, featuring many Gyo projects too.
 Probably stolen from some other gaming site
 ### Tools:
 Probably stolen from some other tools site
+### API Keys:
+You can use them, they are public for a reason
 ### Gyo Tools:
 Many of these require installing Python 3 (some work with 2) and installing libraries with pip. Most are scripts that serve one or many purposes to do something either faster or easier on your computer.
 
