@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Legu Groq Minichat</title>
+    <!-- Favicon fetch from root -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
     <style>
         body {
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -49,7 +51,6 @@
             max-width: 85%;
             line-height: 1.5;
             font-size: 15px;
-            transition: all 0.3s ease;
             animation: fadeIn 0.4s ease-out;
         }
         @keyframes fadeIn {
@@ -131,9 +132,8 @@
 
     async function loadApiKey() {
         try {
-            const response = await fetch('api.txt');
+            const response = await fetch('./api.txt');
             const encodedKey = await response.text();
-            // Decodes Base64 to bypass GitHub Secret Scanning
             API_KEY = atob(encodedKey.trim());
             keyDisplay.innerText = `Current API (public): ${API_KEY}`;
         } catch (err) {
@@ -161,6 +161,7 @@
         sendBtn.disabled = true;
 
         try {
+            // FIXED: Full API endpoint URL required to avoid CORS preflight issues
             const response = await fetch("https://groq.com", {
                 method: "POST",
                 headers: {
@@ -173,11 +174,13 @@
                 })
             });
 
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
             const data = await response.json();
             const aiResponse = data.choices[0].message.content;
             appendMessage('ai', aiResponse);
         } catch (error) {
-            appendMessage('ai', "Status: Error connecting to API.");
+            appendMessage('ai', "Status: Error connecting to API. Check console for details.");
             console.error(error);
         } finally {
             userInput.disabled = false;
