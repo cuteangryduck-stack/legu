@@ -4,29 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tools</title>
-    <link rel="icon" href="https://legu.veho.com.au/legu-rs.png">
+    <link rel="icon" id="favicon" href="">
 
     <style>
-        @font-face {
-            font-family: "AliceHand";
-            src: url("https://legu.veho.com.au/fonts/alicehandwriting.ttf") format("truetype");
-        }
-
-        :root {
-            --bg: #0b0d0b;
-            --green: #3fdc85;
-            --text: #b7c8b7;
-            --text-dim: #6f7a6f;
-            --card: #161c16;
-            --card-hover: #1f261f;
-        }
+        /* Hide body until settings are loaded to prevent style flickering */
+        body { opacity: 0; transition: opacity 0.3s ease; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: "AliceHand", sans-serif;
+            font-family: var(--font-name), sans-serif;
             min-height: 100vh;
             padding: 3rem 1rem;
             display: flex;
@@ -47,7 +36,7 @@
 
         h1 {
             font-size: 4rem;
-            color: var(--green);
+            color: var(--primary);
             margin-bottom: 2rem;
             text-transform: lowercase;
             z-index: 2;
@@ -63,7 +52,7 @@
         }
 
         .card {
-            background: var(--card);
+            background: var(--surface);
             padding: 1.4rem;
             border-radius: 10px;
             text-align: center;
@@ -71,12 +60,12 @@
         }
 
         .card:hover {
-            background: var(--card-hover);
+            background: var(--btn-hover);
             transform: translateY(-4px);
         }
 
         .card a {
-            color: var(--green);
+            color: var(--primary);
             font-size: 1.3rem;
             text-decoration: none;
         }
@@ -87,101 +76,116 @@
 
 <canvas id="particles"></canvas>
 
-<h1>tools</h1>
+<h1 id="page-title">tools</h1>
 
 <div class="grid" id="grid"></div>
 
 <script>
+    async function init() {
+        // 1. Load Settings
+        const res = await fetch('/settings.json');
+        const cfg = await res.json();
+
+        // 2. Apply Dynamic Styles & Fonts
+        const root = document.documentElement;
+        root.style.setProperty('--bg', cfg.colors.background);
+        root.style.setProperty('--surface', cfg.colors.surface);
+        root.style.setProperty('--primary', cfg.colors.primary);
+        root.style.setProperty('--text', cfg.colors.text);
+        root.style.setProperty('--text-dim', cfg.colors.textDim);
+        root.style.setProperty('--btn-hover', cfg.colors.buttonHover);
+        root.style.setProperty('--font-name', cfg.font.name);
+
+        const fontStyle = document.createElement('style');
+        fontStyle.appendChild(document.createTextNode(`
+            @font-face {
+                font-family: "${cfg.font.name}";
+                src: url("${cfg.font.path}") format("${cfg.font.type}");
+            }
+        `));
+        document.head.appendChild(fontStyle);
+
+        // 3. Set Content
+        document.getElementById('favicon').href = cfg.content.favicon;
+        document.body.style.opacity = "1";
+
+        // 4. Start Particles & Fetch Repo Data
+        startParticles(cfg.colors.primary);
+        fetchTools();
+    }
+
     function formatName(name) {
         return name
             .replace(/[-_]/g, " ")
             .replace(/\b\w/g, c => c.toUpperCase());
     }
 
-    fetch("https://api.github.com/repos/cuteangryduck-stack/legu-rs/contents/tools/pages")
-        .then(r => r.json())
-        .then(items => {
-            const grid = document.getElementById("grid");
+    function fetchTools() {
+        fetch("https://api.github.com/repos/cuteangryduck-stack/legu-rs/contents/tools/pages")
+            .then(r => r.json())
+            .then(items => {
+                const grid = document.getElementById("grid");
+                items.forEach(item => {
+                    let name = item.name.replace(".html", "");
+                    let url;
 
-            items.forEach(item => {
-                let name = item.name.replace(".html", "");
-                let url;
+                    if (item.type === "file" && item.name.endsWith(".html")) {
+                        url = `/tools/pages/${item.name}`;
+                    } else if (item.type === "dir") {
+                        url = `/tools/pages/${item.name}/index.html`;
+                    } else return;
 
-                if (item.type === "file" && item.name.endsWith(".html")) {
-                    url = `/tools/pages/${item.name}`;
-                } else if (item.type === "dir") {
-                    url = `/tools/pages/${item.name}/index.html`;
-                } else return;
-
-                const div = document.createElement("div");
-                div.className = "card";
-                div.innerHTML = `<a href="${url}">${formatName(name)}</a>`;
-                grid.appendChild(div);
+                    const div = document.createElement("div");
+                    div.className = "card";
+                    div.innerHTML = `<a href="${url}">${formatName(name)}</a>`;
+                    grid.appendChild(div);
+                });
             });
-        });
-
-    const canvas = document.getElementById("particles");
-    const ctx = canvas.getContext("2d");
-
-    let w, h;
-    function resize() {
-        w = canvas.width = innerWidth;
-        h = canvas.height = innerHeight;
-    }
-    addEventListener("resize", resize);
-    resize();
-
-    const particles = [];
-    for (let i = 0; i < 90; i++) {
-        particles.push({
-            x: Math.random() * w,
-            y: Math.random() * h,
-            s: Math.random() * 2 + 1,
-            vx: (Math.random() - 0.5) * 0.4,
-            vy: (Math.random() - 0.5) * 0.4
-        });
     }
 
-    const mouse = { x: null, y: null };
-    addEventListener("mousemove", e => {
-        mouse.x = e.clientX;
-        mouse.y = e.clientY;
-    });
+    function startParticles(particleColor) {
+        const canvas = document.getElementById("particles");
+        const ctx = canvas.getContext("2d");
+        let w, h;
+        function resize() { w = canvas.width = innerWidth; h = canvas.height = innerHeight; }
+        window.addEventListener("resize", resize);
+        resize();
 
-    function draw() {
-        ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = "rgba(63,220,133,0.9)";
-        ctx.shadowColor = "rgba(63,220,133,0.8)";
-        ctx.shadowBlur = 8;
-
-        for (let p of particles) {
-            const dx = p.x - mouse.x;
-            const dy = p.y - mouse.y;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-
-            if (dist < 130) {
-                p.x += dx / dist * 0.7;
-                p.y += dy / dist * 0.7;
-            }
-
-            p.x += p.vx;
-            p.y += p.vy;
-
-            if (p.x < 0) p.x = w;
-            if (p.x > w) p.x = 0;
-            if (p.y < 0) p.y = h;
-            if (p.y > h) p.y = 0;
-
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2);
-            ctx.fill();
+        const particles = [];
+        for (let i = 0; i < 90; i++) {
+            particles.push({
+                x: Math.random() * w,
+                y: Math.random() * h,
+                s: Math.random() * 2 + 1,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: (Math.random() - 0.5) * 0.4
+            });
         }
 
-        requestAnimationFrame(draw);
+        const mouse = { x: null, y: null };
+        window.addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+
+        function draw() {
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = particleColor;
+            ctx.shadowColor = particleColor;
+            ctx.shadowBlur = 8;
+            for (let p of particles) {
+                const dx = p.x - mouse.x;
+                const dy = p.y - mouse.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 130) { p.x += dx / dist * 0.7; p.y += dy / dist * 0.7; }
+                p.x += p.vx; p.y += p.vy;
+                if (p.x < 0) p.x = w; if (p.x > w) p.x = 0;
+                if (p.y < 0) p.y = h; if (p.y > h) p.y = 0;
+                ctx.beginPath(); ctx.arc(p.x, p.y, p.s, 0, Math.PI * 2); ctx.fill();
+            }
+            requestAnimationFrame(draw);
+        }
+        draw();
     }
 
-    draw();
+    init();
 </script>
-
 </body>
 </html>
