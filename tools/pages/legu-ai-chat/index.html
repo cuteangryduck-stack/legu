@@ -93,7 +93,7 @@
             const response = await fetch('./api.txt');
             const encodedKey = await response.text();
             API_KEY = atob(encodedKey.trim());
-            document.getElementById('key-display').innerText = `Current API (public): ${API_KEY}`;
+            document.getElementById('key-display').innerText = `API Loaded Successfully`;
         } catch (err) { 
             document.getElementById('key-display').innerText = "Error: api.txt not found."; 
         }
@@ -133,10 +133,10 @@
             if (data.choices && data.choices[0]) {
                 appendMessage('ai', data.choices[0].message.content);
             } else {
-                appendMessage('ai', "Unexpected API response format.");
+                appendMessage('ai', "API Error: " + (data.error ? data.error.message : "Unknown error"));
             }
         } catch (e) { 
-            appendMessage('ai', "Error connecting to Groq."); 
+            appendMessage('ai', "CORS Error: Browser blocked the request. You may need a local proxy."); 
         } finally { 
             input.disabled = false; btn.disabled = false; input.focus(); 
         }
